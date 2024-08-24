@@ -4,8 +4,20 @@ export class Particle {
     pos: Vector;
     vel: Vector;
 
-    constructor(posX: number, posY: number) {
+    color: number;
+
+    constructor(posX: number, posY: number, velX: number, velY: number, color: number) {
         this.pos = new Vector(posX, posY);
-        this.vel = new Vector(0, 0);
+        this.vel = new Vector(velX, velY);
+
+        this.color = color;
+    }
+
+    public copy(a: number, b: number): Particle {
+        return new Particle(
+            this.pos.x + a, this.pos.y + b,
+            this.vel.x, this.vel.y,
+            this.color
+        )
     }
 }

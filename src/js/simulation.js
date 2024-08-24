@@ -9,8 +9,6 @@ export class Simulation {
         this.rMax = 0.1;
         this.m = 6;
         this.forceFactor = 10;
-        this.colors = [];
-        this.particles = [];
         this.frictionFactor = Math.pow(0.5, this.dt / this.frictionHalfLife);
         this.matrix = [];
         for (let i = 0; i < this.m; i++) {
@@ -21,23 +19,31 @@ export class Simulation {
             this.matrix.push(row);
         }
         console.log(this.matrix);
+        this.particles = [];
         for (let i = 0; i < this.n; i++) {
-            this.colors[i] = Math.floor(Math.random() * this.m);
-            this.particles[i] = new Particle(Math.random(), Math.random());
+            this.particles[i] = new Particle(Math.random(), Math.random(), 0, 0, Math.floor(Math.random() * this.m));
         }
         this.width = width;
         this.height = height;
     }
+    createReplicas() {
+        this.replicas = [];
+        for (let i = 0; i < this.n; i++) {
+            for (let a = -1; a < 2; a++) {
+                for (let b = -1; b < 2; b++) {
+                    this.replicas.push(this.particles[i].copy(a, b));
+                }
+            }
+        }
+    }
     step() {
         for (let i = 0; i < this.n; i++) {
             const sum = new Vector(0, 0);
-            for (let j = 0; j < this.n; j++) {
-                if (j === i)
-                    continue;
-                const rv = this.particles[j].pos.sub(this.particles[i].pos);
-                const r = this.particles[j].pos.dist(this.particles[i].pos);
-                if (r > 0 && r < this.rMax) {
-                    const f = force(r / this.rMax, this.matrix[this.colors[i]][this.colors[j]]);
+            for (let j = 0; j < this.replicas.length; j++) {
+                const rv = this.replicas[j].pos.sub(this.particles[i].pos);
+                const r = this.replicas[j].pos.dist(this.particles[i].pos);
+                if (r > 0 && r < this.rMax && r < 0.5) {
+                    const f = force(r / this.rMax, this.matrix[this.particles[i].color][this.replicas[j].color]);
                     rv.mul(f / r);
                     sum.add(rv);
                 }
@@ -51,13 +57,15 @@ export class Simulation {
         }
     }
     draw(ctx) {
-        for (let i = 0; i < this.n; i++) {
-            ctx.beginPath();
-            const screenX = this.particles[i].pos.x * this.width;
-            const screenY = this.particles[i].pos.y * this.height;
-            ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
-            ctx.fillStyle = `hsl(${360 * (this.colors[i] / this.m)}, 100%, 50%)`;
-            ctx.fill();
+        for (let i = 0; i < this.replicas.length; i++) {
+            const screenX = this.replicas[i].pos.x * this.width;
+            const screenY = this.replicas[i].pos.y * this.height;
+            if (screenX >= 0 && screenX < this.width && screenY >= 0 && screenY < this.height) {
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = `hsl(${360 * (this.replicas[i].color / this.m)}, 100%, 50%)`;
+                ctx.fill();
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    sim.createReplicas();
     sim.step();
     sim.draw(ctx);
 }
