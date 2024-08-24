@@ -19,19 +19,25 @@ export class Simulation {
             this.matrix.push(row);
         }
         console.log(this.matrix);
-        this.particles = [];
+        this.grid = [];
+        for (let i = 0; i < 9; i++)
+            this.grid.push([]);
         for (let i = 0; i < this.n; i++) {
-            this.particles[i] = new Particle(Math.random(), Math.random(), 0, 0, Math.floor(Math.random() * this.m));
+            this.grid[4][i] = new Particle(Math.random(), Math.random(), 0, 0, Math.floor(Math.random() * this.m));
         }
+        this.createReplicas();
         this.width = width;
         this.height = height;
     }
     createReplicas() {
-        this.replicas = [];
-        for (let i = 0; i < this.n; i++) {
-            for (let a = -1; a < 2; a++) {
-                for (let b = -1; b < 2; b++) {
-                    this.replicas.push(this.particles[i].copy(a, b));
+        for (let a = -1; a < 2; a++) {
+            for (let b = -1; b < 2; b++) {
+                const idx = (a + 1) * 3 + (b + 1);
+                if (idx === 4)
+                    continue;
+                this.grid[idx] = [];
+                for (let i = 0; i < this.n; i++) {
+                    this.grid[idx].push(this.grid[4][i].copy(a, b));
                 }
             }
         }
@@ -39,32 +45,36 @@ export class Simulation {
     step() {
         for (let i = 0; i < this.n; i++) {
             const sum = new Vector(0, 0);
-            for (let j = 0; j < this.replicas.length; j++) {
-                const rv = this.replicas[j].pos.sub(this.particles[i].pos);
-                const r = this.replicas[j].pos.dist(this.particles[i].pos);
-                if (r > 0 && r < this.rMax && r < 0.5) {
-                    const f = force(r / this.rMax, this.matrix[this.particles[i].color][this.replicas[j].color]);
-                    rv.mul(f / r);
-                    sum.add(rv);
+            for (let j = 0; j < 9; j++) {
+                for (let k = 0; k < this.n; k++) {
+                    const rv = this.grid[j][k].pos.sub(this.grid[4][i].pos);
+                    const r = this.grid[j][k].pos.dist(this.grid[4][i].pos);
+                    if (r > 0 && r < this.rMax && r < 0.5) {
+                        const f = force(r / this.rMax, this.matrix[this.grid[4][i].color][this.grid[j][k].color]);
+                        rv.mul(f / r);
+                        sum.add(rv);
+                    }
                 }
             }
             sum.mul(this.rMax * this.forceFactor);
-            this.particles[i].vel.mul(this.frictionFactor);
-            this.particles[i].vel.add(sum.mul(this.dt));
+            this.grid[4][i].vel.mul(this.frictionFactor);
+            this.grid[4][i].vel.add(sum.mul(this.dt));
         }
         for (let i = 0; i < this.n; i++) {
-            this.particles[i].pos.add(this.particles[i].vel.mul(this.dt));
+            this.grid[4][i].pos.add(this.grid[4][i].vel.mul(this.dt));
         }
     }
     draw(ctx) {
-        for (let i = 0; i < this.replicas.length; i++) {
-            const screenX = this.replicas[i].pos.x * this.width;
-            const screenY = this.replicas[i].pos.y * this.height;
-            if (screenX >= 0 && screenX < this.width && screenY >= 0 && screenY < this.height) {
-                ctx.beginPath();
-                ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
-                ctx.fillStyle = `hsl(${360 * (this.replicas[i].color / this.m)}, 100%, 50%)`;
-                ctx.fill();
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < this.n; j++) {
+                const screenX = this.grid[i][j].pos.x * this.width;
+                const screenY = this.grid[i][j].pos.y * this.height;
+                if (screenX >= 0 && screenX < this.width && screenY >= 0 && screenY < this.height) {
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
+                    ctx.fillStyle = `hsl(${360 * (this.grid[i][j].color / this.m)}, 100%, 50%)`;
+                    ctx.fill();
+                }
             }
         }
     }
