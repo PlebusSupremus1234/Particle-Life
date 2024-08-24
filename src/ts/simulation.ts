@@ -1,4 +1,4 @@
-import { dist, force } from "./util.js";
+import { force } from "./util.js";
 import { Particle } from "./particle.js";
 import { Vector } from "./vector.js";
 
