@@ -1,4 +1,4 @@
-import { Vector } from "./vector.js";
+import {Vector} from "./vector.js";
 
 export class Particle {
     pos: Vector;
@@ -13,6 +13,7 @@ export class Particle {
         this.color = color;
     }
 
+    // Copy and shift primary particle to replica simulations
     public copy(a: number, b: number): Particle {
         return new Particle(
             this.pos.x + a, this.pos.y + b,

@@ -5,14 +5,15 @@ const width = 900;
 const height = 900;
 canvas.width = width;
 canvas.height = height;
-const sim = new Simulation(width, height);
+const sim = new Simulation();
 draw();
 function draw() {
     requestAnimationFrame(draw);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    sim.createReplicas();
     sim.step();
-    sim.draw(ctx);
+    sim.createReplicas();
+    sim.updatePrimary();
+    sim.draw(ctx, width, height);
 }

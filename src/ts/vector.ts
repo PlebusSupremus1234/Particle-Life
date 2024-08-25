@@ -12,7 +12,7 @@ export class Vector {
         const a = this.x - v.x;
         const b = this.y - v.y;
 
-        return Math.sqrt(a*a + b*b);
+        return Math.sqrt(a * a + b * b);
     }
 
     public sub(v: Vector): Vector {
