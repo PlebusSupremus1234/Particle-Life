@@ -3,10 +3,9 @@ import {Simulation} from "./simulation.js";
 const canvas = <HTMLCanvasElement>document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const width = 900;
-const height = 900;
-canvas.width = width;
-canvas.height = height;
+const size = Math.min(window.innerWidth, window.innerHeight);
+canvas.width = size;
+canvas.height = size;
 
 const sim = new Simulation();
 
@@ -22,5 +21,5 @@ function draw() {
     sim.step(); // Update velocities and position
     sim.createReplicas(); // Update replica simulations
     sim.updatePrimary(); // Update primary simulation
-    sim.draw(ctx, width, height); // Draw primary simulation
+    sim.draw(ctx, size); // Draw primary simulation
 }

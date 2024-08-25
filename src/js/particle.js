@@ -5,7 +5,7 @@ export class Particle {
         this.vel = new Vector(velX, velY);
         this.color = color;
     }
-    copy(a, b) {
-        return new Particle(this.pos.x + a, this.pos.y + b, this.vel.x, this.vel.y, this.color);
+    copy(x, y) {
+        return new Particle(x, y, this.vel.x, this.vel.y, this.color);
     }
 }

@@ -13,10 +13,10 @@ export class Particle {
         this.color = color;
     }
 
-    // Copy and shift primary particle to replica simulations
-    public copy(a: number, b: number): Particle {
+    // Copy particle to new position
+    public copy(x: number, y: number): Particle {
         return new Particle(
-            this.pos.x + a, this.pos.y + b,
+            x, y,
             this.vel.x, this.vel.y,
             this.color
         )

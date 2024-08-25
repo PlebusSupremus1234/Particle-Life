@@ -40,7 +40,7 @@ export class Simulation {
         for (let i = 0; i < this.n; i++) {
             this.primary.push(new Particle(
                 Math.random(), Math.random(),      // Pos
-                0, 0,                             // Velocity
+                0, 0,                              // Velocity
                 Math.floor(Math.random() * this.m) // Color
             ));
         }
@@ -54,7 +54,7 @@ export class Simulation {
     public updatePrimary() {
         this.primary = [];
 
-        for (let i = 0; i < 9 * this.n; i++) {
+        for (let i = 0; i < this.allParticles.length; i++) {
             if (this.allParticles[i].pos.x > 0 && this.allParticles[i].pos.x < 1) {
                 if (this.allParticles[i].pos.y > 0 && this.allParticles[i].pos.y < 1) {
                     this.primary.push(this.allParticles[i]);
@@ -70,7 +70,18 @@ export class Simulation {
         for (let a = -1; a < 2; a++) {
             for (let b = -1; b < 2; b++) {
                 for (let i = 0; i < this.n; i++) {
-                    this.allParticles.push(this.primary[i].copy(a, b));
+                    // Instead of replicating the whole simulation, only copy particles around the edges
+                    // Cuts down total amount of particles by ~84%
+                    const newX = this.primary[i].pos.x + a;
+                    const newY = this.primary[i].pos.y + b;
+
+                    // Check if within primary sim + margins
+                    if (
+                        newX > -this.rMax && newX < 1 + this.rMax &&
+                        newY > -this.rMax && newY < 1 + this.rMax
+                    ) {
+                        this.allParticles.push(this.primary[i].copy(newX, newY));
+                    }
                 }
             }
         }
@@ -82,7 +93,7 @@ export class Simulation {
         for (let i = 0; i < this.n; i++) {
             const sum = new Vector(0, 0);
 
-            for (let j = 0; j < 9 * this.n; j++) { // All particles
+            for (let j = 0; j < this.allParticles.length; j++) { // All particles
                 const rv = this.allParticles[j].pos.sub(this.primary[i].pos)
                 const r = this.allParticles[j].pos.dist(this.primary[i].pos)
 
@@ -110,16 +121,21 @@ export class Simulation {
     }
 
     // Draw primary simulation particles
-    public draw(ctx: CanvasRenderingContext2D, width: number, height: number) {
-        for (let i = 0; i < this.n; i++) {
-            const screenX = this.primary[i].pos.x * width;
-            const screenY = this.primary[i].pos.y * height;
+    public draw(ctx: CanvasRenderingContext2D, size: number) {
+        const radius = 2;
 
-            if (screenX >= 0 && screenX < width && screenY >= 0 && screenY < height) {
+        for (let i = 0; i < this.allParticles.length; i++) {
+            const screenX = this.allParticles[i].pos.x * size;
+            const screenY = this.allParticles[i].pos.y * size;
+
+            if (
+                screenX >= -radius && screenX < size + radius &&
+                screenY >= -radius && screenY < size + radius
+            ) {
                 ctx.beginPath();
-                ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
+                ctx.arc(screenX, screenY, radius, 0, 2 * Math.PI);
 
-                ctx.fillStyle = `hsl(${360 * (this.primary[i].color / this.m)}, 100%, 50%)`;
+                ctx.fillStyle = `hsl(${360 * (this.allParticles[i].color / this.m)}, 100%, 50%)`;
                 ctx.fill();
             }
         }
