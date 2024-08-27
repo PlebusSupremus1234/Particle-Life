@@ -25,6 +25,13 @@ export class Simulation {
         }
         this.allParticles = [];
         this.createReplicas();
+        this.gridSize = 1 / this.rMax + 2;
+        this.mooreNeighbors = [
+            -this.gridSize - 1, -this.gridSize, -this.gridSize + 1,
+            -1, 0, 1,
+            this.gridSize - 1, this.gridSize, this.gridSize + 1
+        ];
+        this.updateGrid();
     }
     updatePrimary() {
         this.primary = [];
@@ -51,16 +58,43 @@ export class Simulation {
             }
         }
     }
+    getGridIdx(x, y) {
+        const xIdx = Math.floor((x + this.rMax) * 10);
+        const yIdx = Math.floor((y + this.rMax) * 10);
+        return yIdx * this.gridSize + xIdx;
+    }
+    getGridIdxs(idx) {
+        const output = [];
+        for (let i = 0; i < 9; i++) {
+            const mooreIdx = idx + this.mooreNeighbors[i];
+            if (this.grid[mooreIdx].length !== 0)
+                output.push(mooreIdx);
+        }
+        return output;
+    }
+    updateGrid() {
+        this.grid = [];
+        for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+            this.grid[i] = [];
+        }
+        for (let i = 0; i < this.allParticles.length; i++) {
+            const idx = this.getGridIdx(this.allParticles[i].pos.x, this.allParticles[i].pos.y);
+            this.grid[idx].push(this.allParticles[i]);
+        }
+    }
     step() {
         for (let i = 0; i < this.n; i++) {
             const sum = new Vector(0, 0);
-            for (let j = 0; j < this.allParticles.length; j++) {
-                const rv = this.allParticles[j].pos.sub(this.primary[i].pos);
-                const r = this.allParticles[j].pos.dist(this.primary[i].pos);
-                if (r > 0 && r < this.rMax && r < 0.5) {
-                    const f = force(r / this.rMax, this.matrix[this.primary[i].color][this.allParticles[j].color]);
-                    rv.mul(f / r);
-                    sum.add(rv);
+            const neighborIdxs = this.getGridIdxs(this.getGridIdx(this.primary[i].pos.x, this.primary[i].pos.y));
+            for (let j of neighborIdxs) {
+                for (let k = 0; k < this.grid[j].length; k++) {
+                    const rv = this.grid[j][k].pos.sub(this.primary[i].pos);
+                    const r = this.grid[j][k].pos.dist(this.primary[i].pos);
+                    if (r > 0 && r < this.rMax) {
+                        const f = force(r / this.rMax, this.matrix[this.primary[i].color][this.grid[j][k].color]);
+                        rv.mul(f / r);
+                        sum.add(rv);
+                    }
                 }
             }
             sum.mul(this.rMax * this.forceFactor);

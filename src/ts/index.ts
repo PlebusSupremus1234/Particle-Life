@@ -21,5 +21,6 @@ function draw() {
     sim.step(); // Update velocities and position
     sim.createReplicas(); // Update replica simulations
     sim.updatePrimary(); // Update primary simulation
+    sim.updateGrid(); // Update grid for neighbors
     sim.draw(ctx, size); // Draw primary simulation
 }

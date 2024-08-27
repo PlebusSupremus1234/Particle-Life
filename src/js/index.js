@@ -14,5 +14,6 @@ function draw() {
     sim.step();
     sim.createReplicas();
     sim.updatePrimary();
+    sim.updateGrid();
     sim.draw(ctx, size);
 }

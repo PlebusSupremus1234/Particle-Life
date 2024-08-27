@@ -19,6 +19,10 @@ export class Simulation {
     primary: Particle[]; // Primary simulation
     allParticles: Particle[]; // Copies of particles and replicas for periodic boundary
 
+    grid: Particle[][]; // R width grid for efficiency when searching for neighbors
+    gridSize: number;
+    mooreNeighbors: number[];
+
     constructor() {
         this.frictionFactor = Math.pow(0.5, this.dt / this.frictionHalfLife);
 
@@ -48,6 +52,15 @@ export class Simulation {
         // Initialize the other replica simulations
         this.allParticles = [];
         this.createReplicas();
+
+        // Initialize grid
+        this.gridSize = 1 / this.rMax + 2; // 12
+        this.mooreNeighbors = [
+            -this.gridSize - 1, -this.gridSize, -this.gridSize + 1,
+            -1, 0, 1,
+            this.gridSize - 1, this.gridSize, this.gridSize + 1
+        ];
+        this.updateGrid();
     }
 
     // Update primary simulation particles to what particles are inside the primary simulation
@@ -87,24 +100,57 @@ export class Simulation {
         }
     }
 
+    private getGridIdx(x: number, y: number): number {
+        const xIdx = Math.floor((x + this.rMax) * 10);
+        const yIdx = Math.floor((y + this.rMax) * 10);
+
+        return yIdx * this.gridSize + xIdx;
+    }
+
+    private getGridIdxs(idx: number): number[] {
+        const output: number[] = [];
+
+        for (let i = 0; i < 9; i++) {
+            const mooreIdx = idx + this.mooreNeighbors[i];
+            if (this.grid[mooreIdx].length !== 0) output.push(mooreIdx);
+        }
+
+        return output;
+    }
+
+    public updateGrid() {
+        this.grid = [];
+        for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+            this.grid[i] = [];
+        }
+
+        for (let i = 0; i < this.allParticles.length; i++) {
+            const idx = this.getGridIdx(this.allParticles[i].pos.x, this.allParticles[i].pos.y);
+            this.grid[idx].push(this.allParticles[i]);
+        }
+    }
+
     // Simulation step - only need to update primary simulation
     public step() {
         // Update velocities
         for (let i = 0; i < this.n; i++) {
             const sum = new Vector(0, 0);
 
-            for (let j = 0; j < this.allParticles.length; j++) { // All particles
-                const rv = this.allParticles[j].pos.sub(this.primary[i].pos)
-                const r = this.allParticles[j].pos.dist(this.primary[i].pos)
+            const neighborIdxs = this.getGridIdxs(this.getGridIdx(this.primary[i].pos.x, this.primary[i].pos.y));
+            for (let j of neighborIdxs) {
+                for (let k = 0; k < this.grid[j].length; k++) {
+                    const rv = this.grid[j][k].pos.sub(this.primary[i].pos);
+                    const r = this.grid[j][k].pos.dist(this.primary[i].pos);
 
-                if (r > 0 && r < this.rMax && r < 0.5) { // 0.5 is half sim size
-                    const f = force(
-                        r / this.rMax,
-                        this.matrix[this.primary[i].color][this.allParticles[j].color]
-                    );
+                    if (r > 0 && r < this.rMax) {
+                        const f = force(
+                            r / this.rMax,
+                            this.matrix[this.primary[i].color][this.grid[j][k].color]
+                        );
 
-                    rv.mul(f / r);
-                    sum.add(rv);
+                        rv.mul(f / r);
+                        sum.add(rv);
+                    }
                 }
             }
 
