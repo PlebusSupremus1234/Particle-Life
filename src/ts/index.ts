@@ -18,9 +18,11 @@ function draw() {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    sim.step(); // Update velocities and position
-    sim.createReplicas(); // Update replica simulations
-    sim.updatePrimary(); // Update primary simulation
-    sim.updateGrid(); // Update grid for neighbors
+    for (let i = 0; i < 2; i++) {
+        sim.step();           // Update velocities and position
+        sim.createReplicas(); // Update replica simulations
+        sim.updatePrimary();  // Update primary simulation
+    }
+
     sim.draw(ctx, size); // Draw primary simulation
 }

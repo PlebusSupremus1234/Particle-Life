@@ -4,7 +4,7 @@ import {Vector} from "./vector.js";
 
 export class Simulation {
     n = 1000; // Number of particles
-    dt = 0.02; // Time step
+    dt = 0.01; // Time step
 
     frictionHalfLife = 0.040; // Friction half life
     frictionFactor: number;
@@ -17,7 +17,6 @@ export class Simulation {
     matrix: number[][]; // Attraction matrix
 
     primary: Particle[]; // Primary simulation
-    allParticles: Particle[]; // Copies of particles and replicas for periodic boundary
 
     grid: Particle[][]; // R width grid for efficiency when searching for neighbors
     gridSize: number;
@@ -49,10 +48,6 @@ export class Simulation {
             ));
         }
 
-        // Initialize the other replica simulations
-        this.allParticles = [];
-        this.createReplicas();
-
         // Initialize grid
         this.gridSize = 1 / this.rMax + 2; // 12
         this.mooreNeighbors = [
@@ -60,17 +55,21 @@ export class Simulation {
             -1, 0, 1,
             this.gridSize - 1, this.gridSize, this.gridSize + 1
         ];
-        this.updateGrid();
+
+        // Initialize the other replica simulations
+        this.createReplicas();
     }
 
     // Update primary simulation particles to what particles are inside the primary simulation
     public updatePrimary() {
         this.primary = [];
 
-        for (let i = 0; i < this.allParticles.length; i++) {
-            if (this.allParticles[i].pos.x > 0 && this.allParticles[i].pos.x < 1) {
-                if (this.allParticles[i].pos.y > 0 && this.allParticles[i].pos.y < 1) {
-                    this.primary.push(this.allParticles[i]);
+        for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+            for (let j = 0; j < this.grid[i].length; j++) {
+                if (this.grid[i][j].pos.x > 0 && this.grid[i][j].pos.x < 1) {
+                    if (this.grid[i][j].pos.y > 0 && this.grid[i][j].pos.y < 1) {
+                        this.primary.push(this.grid[i][j]);
+                    }
                 }
             }
         }
@@ -78,7 +77,10 @@ export class Simulation {
 
     // Creates replicas of the primary simulation
     public createReplicas() {
-        this.allParticles = [];
+        this.grid = [];
+        for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+            this.grid[i] = [];
+        }
 
         for (let a = -1; a < 2; a++) {
             for (let b = -1; b < 2; b++) {
@@ -93,7 +95,8 @@ export class Simulation {
                         newX > -this.rMax && newX < 1 + this.rMax &&
                         newY > -this.rMax && newY < 1 + this.rMax
                     ) {
-                        this.allParticles.push(this.primary[i].copy(newX, newY));
+                        const idx = this.getGridIdx(newX, newY);
+                        this.grid[idx].push(this.primary[i].copy(newX, newY));
                     }
                 }
             }
@@ -116,18 +119,6 @@ export class Simulation {
         }
 
         return output;
-    }
-
-    public updateGrid() {
-        this.grid = [];
-        for (let i = 0; i < this.gridSize * this.gridSize; i++) {
-            this.grid[i] = [];
-        }
-
-        for (let i = 0; i < this.allParticles.length; i++) {
-            const idx = this.getGridIdx(this.allParticles[i].pos.x, this.allParticles[i].pos.y);
-            this.grid[idx].push(this.allParticles[i]);
-        }
     }
 
     // Simulation step - only need to update primary simulation
@@ -170,19 +161,21 @@ export class Simulation {
     public draw(ctx: CanvasRenderingContext2D, size: number) {
         const radius = 2;
 
-        for (let i = 0; i < this.allParticles.length; i++) {
-            const screenX = this.allParticles[i].pos.x * size;
-            const screenY = this.allParticles[i].pos.y * size;
+        for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+            for (let j = 0; j < this.grid[i].length; j++) {
+                const screenX = this.grid[i][j].pos.x * size;
+                const screenY = this.grid[i][j].pos.y * size;
 
-            if (
-                screenX >= -radius && screenX < size + radius &&
-                screenY >= -radius && screenY < size + radius
-            ) {
-                ctx.beginPath();
-                ctx.arc(screenX, screenY, radius, 0, 2 * Math.PI);
+                if (
+                    screenX >= -radius && screenX < size + radius &&
+                    screenY >= -radius && screenY < size + radius
+                ) {
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, radius, 0, 2 * Math.PI);
 
-                ctx.fillStyle = `hsl(${360 * (this.allParticles[i].color / this.m)}, 100%, 50%)`;
-                ctx.fill();
+                    ctx.fillStyle = `hsl(${360 * (this.grid[i][j].color / this.m)}, 100%, 50%)`;
+                    ctx.fill();
+                }
             }
         }
     }

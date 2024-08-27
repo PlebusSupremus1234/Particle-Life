@@ -11,9 +11,10 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    sim.step();
-    sim.createReplicas();
-    sim.updatePrimary();
-    sim.updateGrid();
+    for (let i = 0; i < 2; i++) {
+        sim.step();
+        sim.createReplicas();
+        sim.updatePrimary();
+    }
     sim.draw(ctx, size);
 }
